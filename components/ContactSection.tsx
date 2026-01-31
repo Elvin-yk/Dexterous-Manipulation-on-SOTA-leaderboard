@@ -1,3 +1,5 @@
+import { withBasePath } from "@/lib/paths";
+
 export default function ContactSection() {
   return (
     <section id="contact" className="max-w-6xl mx-auto px-6 py-16">
@@ -15,7 +17,7 @@ export default function ContactSection() {
         </div>
         <div className="card flex flex-col items-center">
           <img
-            src="/brand/wechat-qr-placeholder.svg"
+            src={withBasePath("/brand/wechat-qr-placeholder.svg")}
             alt="WeChat QR placeholder"
             width={220}
             height={220}
