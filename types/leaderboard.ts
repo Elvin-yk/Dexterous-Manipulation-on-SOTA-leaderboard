@@ -13,6 +13,7 @@ export type Benchmark = {
   columns: BenchmarkColumn[];
   links: Link[];
   meanColumnId: string;
+  color?: string;
 };
 
 export type BenchmarkValues = {

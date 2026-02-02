@@ -4,6 +4,7 @@ import XLSX from "xlsx";
 
 const workbookPath = path.resolve("assets/raw/Dexterous Manipulation SOTA Leaderboard.xlsx");
 const outputPath = path.resolve("data/leaderboard.json");
+const colorMapPath = path.resolve("data/benchmark-colors.json");
 
 if (!fs.existsSync(workbookPath)) {
   console.error(`Missing Excel file: ${workbookPath}`);
@@ -41,6 +42,68 @@ const labelFromUrl = (url) => {
   if (url.includes("github")) return "Code";
   if (url.includes("google.com/drive")) return "Assets";
   return "Website";
+};
+
+const seedFromString = (value) => {
+  let hash = 2166136261;
+  for (let i = 0; i < value.length; i += 1) {
+    hash ^= value.charCodeAt(i);
+    hash += (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24);
+  }
+  return hash >>> 0;
+};
+
+const mulberry32 = (seed) => {
+  let t = seed;
+  return () => {
+    t += 0x6d2b79f5;
+    let r = Math.imul(t ^ (t >>> 15), 1 | t);
+    r ^= r + Math.imul(r ^ (r >>> 7), 61 | r);
+    return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+  };
+};
+
+const createRandomColor = (rng) => {
+  const hue = Math.floor(rng() * 360);
+  const saturation = 70;
+  const lightness = 55;
+  return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+};
+
+const loadColorMap = () => {
+  if (!fs.existsSync(colorMapPath)) return {};
+  try {
+    return JSON.parse(fs.readFileSync(colorMapPath, "utf-8"));
+  } catch (err) {
+    return {};
+  }
+};
+
+const saveColorMap = (map) => {
+  fs.mkdirSync(path.dirname(colorMapPath), { recursive: true });
+  fs.writeFileSync(colorMapPath, JSON.stringify(map, null, 2));
+};
+
+const assignBenchmarkColors = (benchmarksList) => {
+  const colorMap = loadColorMap();
+  const seed = seedFromString("dexterous-benchmark-colors");
+  const rng = mulberry32(seed);
+
+  const existingColors = new Set(Object.values(colorMap));
+  benchmarksList.forEach((benchmark) => {
+    if (colorMap[benchmark.id]) return;
+    let color = createRandomColor(rng);
+    let safety = 0;
+    while (existingColors.has(color) && safety < 1000) {
+      color = createRandomColor(rng);
+      safety += 1;
+    }
+    colorMap[benchmark.id] = color;
+    existingColors.add(color);
+  });
+
+  saveColorMap(colorMap);
+  return colorMap;
 };
 
 const parseBenchmarkLinks = () => {
@@ -130,6 +193,7 @@ const benchmarks = [
 ];
 
 const benchmarkLinks = parseBenchmarkLinks();
+const benchmarkColors = assignBenchmarkColors(benchmarks);
 
 const methods = [];
 for (let row = 4; row <= 200; row += 1) {
@@ -191,6 +255,7 @@ const data = {
   generatedAt: new Date().toISOString(),
   benchmarks: benchmarks.map((benchmark) => ({
     ...benchmark,
+    color: benchmarkColors[benchmark.id],
     columns: benchmark.columns.map(({ col, ...rest }) => rest),
     links: benchmarkLinks[benchmark.id] || []
   })),

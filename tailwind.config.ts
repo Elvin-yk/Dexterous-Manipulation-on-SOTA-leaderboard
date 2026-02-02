@@ -5,20 +5,23 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        ink: "#0f172a",
-        slate: "#1f2937",
-        muted: "#64748b",
-        surface: "#f8fafc",
-        accent: "#1d4ed8",
-        accentSoft: "#dbeafe"
+        primary: {
+          50: "#eff6ff",
+          100: "#dbeafe",
+          200: "#bfdbfe",
+          300: "#93c5fd",
+          400: "#60a5fa",
+          500: "#3b82f6",
+          550: "#3474f3",
+          600: "#2563eb",
+          700: "#1d4ed8",
+          800: "#1e40af",
+          900: "#1e3a8a"
+        }
       },
       fontFamily: {
-        display: ["Sora", "system-ui", "sans-serif"],
-        body: ["IBM Plex Sans", "system-ui", "sans-serif"]
-      },
-      boxShadow: {
-        soft: "0 12px 30px rgba(15, 23, 42, 0.12)",
-        glow: "0 12px 30px rgba(29, 78, 216, 0.2)"
+        sans: ["Inter", "system-ui", "sans-serif"],
+        mono: ["JetBrains Mono", "monospace"]
       }
     }
   },

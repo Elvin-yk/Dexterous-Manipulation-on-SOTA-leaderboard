@@ -8,7 +8,7 @@ export default function BenchmarksPage() {
 
   return (
     <div>
-      <Header />
+      <Header benchmarks={data.benchmarks} />
       <section className="max-w-6xl mx-auto px-6 py-16">
         <h1 className="text-3xl font-display font-semibold">Benchmarks</h1>
         <p className="text-muted mt-2">
