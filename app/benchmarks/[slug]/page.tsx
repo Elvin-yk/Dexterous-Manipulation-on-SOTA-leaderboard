@@ -1,4 +1,3 @@
-import Footer from "@/components/Footer";
 import Header from "@/components/Header";
 import LeaderboardTable from "@/components/LeaderboardTable";
 import { loadLeaderboardData } from "@/lib/leaderboard";
@@ -63,9 +62,6 @@ export default function BenchmarkDetailPage({ params }: { params: { slug: string
             Click row to expand details.
           </div>
           <LeaderboardTable benchmark={benchmark} rows={data.methods} title={`${benchmark.name} Leaderboard`} />
-          <div className="mt-12">
-            <Footer />
-          </div>
         </div>
       </div>
     </div>

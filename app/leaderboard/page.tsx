@@ -1,4 +1,3 @@
-import Footer from "@/components/Footer";
 import Header from "@/components/Header";
 import LeaderboardTable from "@/components/LeaderboardTable";
 import { loadLeaderboardData } from "@/lib/leaderboard";
@@ -23,7 +22,6 @@ export default function LeaderboardPage() {
           title={`${benchmark.name} Leaderboard`}
         />
       ))}
-      <Footer />
     </div>
   );
 }

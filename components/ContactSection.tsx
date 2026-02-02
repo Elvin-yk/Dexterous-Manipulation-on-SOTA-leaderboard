@@ -1,5 +1,3 @@
-import { withBasePath } from "@/lib/paths";
-
 export default function ContactSection() {
   return (
     <footer className="mt-16 border-t border-slate-200 pt-8 pb-10">
@@ -29,14 +27,6 @@ export default function ContactSection() {
             </svg>
             business@evomind-tech.com
           </a>
-        </div>
-        <div className="mt-8 flex flex-col items-center gap-3">
-          <img
-            src={withBasePath("/brand/evomind_wechat.jpg")}
-            alt="WeChat QR"
-            className="w-40 h-40 rounded-lg border border-slate-200"
-          />
-          <p className="text-sm text-slate-600">Scan to join our WeChat group</p>
         </div>
       </div>
     </footer>
