@@ -2,10 +2,12 @@ import BenchmarkCards from "@/components/BenchmarkCards";
 import ContactSection from "@/components/ContactSection";
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
-import ProgressChart from "@/components/ProgressChart";
 import StatsOverview from "@/components/StatsOverview";
 import UpdatesSection from "@/components/UpdatesSection";
 import { loadLeaderboardData } from "@/lib/leaderboard";
+import dynamic from "next/dynamic";
+
+const ProgressChart = dynamic(() => import("@/components/ProgressChart"), { ssr: false });
 
 export default function HomePage() {
   const data = loadLeaderboardData();

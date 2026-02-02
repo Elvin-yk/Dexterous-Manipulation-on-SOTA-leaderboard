@@ -21,6 +21,13 @@ const normalizeCellValue = (raw) => {
   return value;
 };
 
+const parseScore = (value) => {
+  if (!value) return null;
+  const match = String(value).match(/[-+]?[0-9]*\.?[0-9]+/);
+  if (!match) return null;
+  return Number(match[0]);
+};
+
 const slugify = (value) =>
   value
     .toLowerCase()
@@ -232,13 +239,15 @@ for (let row = 4; row <= 200; row += 1) {
     project: projectCell.link
       ? { label: labelFromUrl(projectCell.link), url: projectCell.link }
       : undefined,
+    isOpenSource: Boolean(projectCell.link),
+    ranks: {},
     benchmarks: benchmarksData
   });
 }
 
 const parseTimeScore = (time) => {
   if (!time) return 0;
-  const match = /^(\d{4})\.(\d{2})/.exec(time);
+  const match = /^(\d{4})\.(\d{1,2})/.exec(time);
   if (!match) return 0;
   return parseInt(match[1], 10) * 100 + parseInt(match[2], 10);
 };
@@ -262,6 +271,20 @@ const data = {
   methods,
   updates
 };
+
+benchmarks.forEach((benchmark) => {
+  const scored = methods
+    .map((method) => ({
+      method,
+      score: parseScore(method.benchmarks?.[benchmark.id]?.values?.[benchmark.meanColumnId])
+    }))
+    .filter((item) => item.score !== null)
+    .sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+
+  scored.forEach((item, index) => {
+    item.method.ranks[benchmark.id] = index + 1;
+  });
+});
 
 fs.mkdirSync(path.dirname(outputPath), { recursive: true });
 fs.writeFileSync(outputPath, JSON.stringify(data, null, 2));

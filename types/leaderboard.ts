@@ -30,6 +30,8 @@ export type MethodRow = {
   time: string;
   paper?: Link;
   project?: Link;
+  isOpenSource?: boolean;
+  ranks?: Partial<Record<Benchmark["id"], number>>;
   benchmarks: Record<Benchmark["id"], BenchmarkValues>;
 };
 

@@ -39,57 +39,42 @@ export default function LeaderboardTable({
   title: string;
 }) {
   const [showAllMetrics, setShowAllMetrics] = useState(false);
-  const [sortBy, setSortBy] = useState<"rank" | "mean" | "date">("rank");
+  const [showOpenSourceOnly, setShowOpenSourceOnly] = useState(false);
+  const [sortBy, setSortBy] = useState<"rank" | "date">("rank");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-  const [expandedRow, setExpandedRow] = useState<number | null>(null);
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
   const filteredRows = useMemo(() => {
     return rows.filter((row) => {
       const value = row.benchmarks?.[benchmark.id]?.values?.[benchmark.meanColumnId];
-      return parseScore(value) !== null;
+      if (parseScore(value) === null) return false;
+      if (showOpenSourceOnly && !row.isOpenSource) return false;
+      return true;
     });
-  }, [rows, benchmark]);
+  }, [rows, benchmark, showOpenSourceOnly]);
 
   const sortedRows = useMemo(() => {
-    const copy = [...filteredRows];
-    if (sortBy === "mean") {
-      copy.sort((a, b) => {
-        const aScore = parseScore(a.benchmarks?.[benchmark.id]?.values?.[benchmark.meanColumnId]) || 0;
-        const bScore = parseScore(b.benchmarks?.[benchmark.id]?.values?.[benchmark.meanColumnId]) || 0;
-        return sortOrder === "asc" ? aScore - bScore : bScore - aScore;
-      });
-    } else if (sortBy === "date") {
+    if (sortBy === "date") {
+      const copy = [...filteredRows];
       copy.sort((a, b) => {
         const aDate = a.time || "";
         const bDate = b.time || "";
         return sortOrder === "asc" ? aDate.localeCompare(bDate) : bDate.localeCompare(aDate);
       });
-    } else {
-      copy.sort((a, b) => {
-        const aScore = parseScore(a.benchmarks?.[benchmark.id]?.values?.[benchmark.meanColumnId]);
-        const bScore = parseScore(b.benchmarks?.[benchmark.id]?.values?.[benchmark.meanColumnId]);
-        if (aScore === null && bScore === null) return 0;
-        if (aScore === null) return 1;
-        if (bScore === null) return -1;
-        return bScore - aScore;
-      });
-      if (sortOrder === "asc") copy.reverse();
+      return copy;
     }
+    const copy = [...filteredRows];
+    copy.sort((a, b) => {
+      const aRank = a.ranks?.[benchmark.id] ?? Number.POSITIVE_INFINITY;
+      const bRank = b.ranks?.[benchmark.id] ?? Number.POSITIVE_INFINITY;
+      return sortOrder === "asc" ? aRank - bRank : bRank - aRank;
+    });
     return copy;
   }, [filteredRows, benchmark, sortBy, sortOrder]);
 
   const maxMap = useMemo(() => getMaxByColumn(benchmark, sortedRows), [benchmark, sortedRows]);
   const accent = benchmark.color || "#3b82f6";
   const headerGradient = `linear-gradient(90deg, ${accent}, ${shiftHslLightness(accent, -10)})`;
-
-  const handleSort = (key: "rank" | "mean" | "date") => {
-    if (sortBy === key) {
-      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-    } else {
-      setSortBy(key);
-      setSortOrder(key === "rank" ? "asc" : "desc");
-    }
-  };
 
   const detailColumns = benchmark.columns.filter((col) => col.kind === "score" && col.id !== benchmark.meanColumnId);
 
@@ -120,23 +105,40 @@ export default function LeaderboardTable({
         <div className="flex items-center gap-3 text-sm text-slate-600">
           <span>Sort by:</span>
           <button
-            onClick={() => handleSort("rank")}
+            onClick={() => {
+              if (sortBy === "rank") {
+                setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+              } else {
+                setSortBy("rank");
+                setSortOrder("asc");
+              }
+            }}
             className="px-3 py-1.5 border border-slate-300 rounded-lg hover:border-primary-500"
           >
             Rank {sortBy === "rank" && (sortOrder === "asc" ? "↑" : "↓")}
           </button>
           <button
-            onClick={() => handleSort("mean")}
-            className="px-3 py-1.5 border border-slate-300 rounded-lg hover:border-primary-500"
-          >
-            Mean {sortBy === "mean" && (sortOrder === "asc" ? "↑" : "↓")}
-          </button>
-          <button
-            onClick={() => handleSort("date")}
+            onClick={() => {
+              if (sortBy === "date") {
+                setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+              } else {
+                setSortBy("date");
+                setSortOrder("desc");
+              }
+            }}
             className="px-3 py-1.5 border border-slate-300 rounded-lg hover:border-primary-500"
           >
             Date {sortBy === "date" && (sortOrder === "asc" ? "↑" : "↓")}
           </button>
+          <label className="flex items-center gap-2 cursor-pointer text-sm text-slate-600">
+            <input
+              type="checkbox"
+              checked={showOpenSourceOnly}
+              onChange={(e) => setShowOpenSourceOnly(e.target.checked)}
+              className="w-4 h-4 text-primary-600 rounded border-gray-300 focus:ring-primary-500"
+            />
+            Open-Source Models Only
+          </label>
         </div>
         <button
           onClick={() => setShowAllMetrics(!showAllMetrics)}
@@ -151,25 +153,10 @@ export default function LeaderboardTable({
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-slate-200" style={{ background: toHsla(accent, 0.1) }}>
-                <th
-                  className="px-4 py-3 text-left text-sm font-semibold text-slate-700 cursor-pointer hover:bg-slate-100"
-                  onClick={() => handleSort("rank")}
-                >
-                  Rank
-                </th>
+                <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Rank</th>
                 <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Model</th>
-                <th
-                  className="px-4 py-3 text-left text-sm font-semibold text-slate-700 cursor-pointer hover:bg-slate-100"
-                  onClick={() => handleSort("mean")}
-                >
-                  Mean
-                </th>
-                <th
-                  className="px-4 py-3 text-left text-sm font-semibold text-slate-700 cursor-pointer hover:bg-slate-100"
-                  onClick={() => handleSort("date")}
-                >
-                  Date
-                </th>
+                <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Mean</th>
+                <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Date</th>
                 {showAllMetrics &&
                   detailColumns.map((col) => (
                     <th key={col.id} className="px-4 py-3 text-left text-sm font-semibold text-slate-700">
@@ -189,29 +176,40 @@ export default function LeaderboardTable({
             ) : (
               sortedRows.map((row, index) => {
                 const meta = row.benchmarks?.[benchmark.id];
-                const rowKey = index + 1;
+                const rank = row.ranks?.[benchmark.id] ?? index + 1;
+                const isExpanded = expandedRows.has(row.id);
                 return (
                   <>
                     <tr
                       key={row.id}
                       className={`border-b border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors ${
-                        expandedRow === rowKey ? "bg-slate-50" : ""
+                        isExpanded ? "bg-slate-50" : ""
                       }`}
-                      onClick={() => setExpandedRow(expandedRow === rowKey ? null : rowKey)}
+                      onClick={() =>
+                        setExpandedRows((prev) => {
+                          const next = new Set(prev);
+                          if (next.has(row.id)) {
+                            next.delete(row.id);
+                          } else {
+                            next.add(row.id);
+                          }
+                          return next;
+                        })
+                      }
                     >
                         <td className="px-4 py-3">
                           <span
                             className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold border ${
-                              index === 0
+                              rank === 1
                                 ? "rank-1"
-                                : index === 1
+                                : rank === 2
                                   ? "rank-2"
-                                  : index === 2
+                                  : rank === 3
                                     ? "rank-3"
                                     : "bg-slate-100 text-slate-600 border-slate-200"
                             }`}
                           >
-                            {index + 1}
+                            {rank}
                           </span>
                         </td>
                         <td className="px-4 py-3">
@@ -248,10 +246,10 @@ export default function LeaderboardTable({
                         <td className="px-4 py-3 text-center">
                           <button
                             className="text-slate-400 hover:text-slate-600"
-                            aria-label={expandedRow === rowKey ? "Hide details" : "Show details"}
+                            aria-label={isExpanded ? "Hide details" : "Show details"}
                           >
                             <svg
-                              className={`w-5 h-5 transition-transform ${expandedRow === rowKey ? "rotate-180" : ""}`}
+                              className={`w-5 h-5 transition-transform ${isExpanded ? "rotate-180" : ""}`}
                               fill="none"
                               stroke="currentColor"
                               viewBox="0 0 24 24"
@@ -261,7 +259,7 @@ export default function LeaderboardTable({
                           </button>
                         </td>
                       </tr>
-                      {expandedRow === rowKey && (
+                    {isExpanded && (
                         <tr className="bg-slate-50 border-b border-slate-200">
                           <td colSpan={showAllMetrics ? 6 + detailColumns.length : 6} className="px-4 py-4">
                             <div className="ml-4 space-y-4">
